@@ -1,6 +1,7 @@
-let num = 1;
+let opcion;
 
-while(num<=5){
-    console.log(num);
-    num=num+1;
+do{
+    opcion = prompt(
+        "1. Imagen \n2. Audio\n3. Salir"
+    );
 }
