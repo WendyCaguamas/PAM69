@@ -127,7 +127,7 @@ loader.load(
         camera.position.set(
             distance * 6,
             distance * 0,
-            distance * 4
+            distance * 5
         );
 
         // Mirar al centro del modelo
