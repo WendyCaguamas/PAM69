@@ -7,7 +7,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // =====================================
 
 const scene = new THREE.Scene();
-
 scene.background = null;
 
 
@@ -20,17 +19,13 @@ const renderer = new THREE.WebGLRenderer({
     alpha: true
 });
 
-renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
-);
+renderer.setSize(window.innerWidth, window.innerHeight);
 
 renderer.setPixelRatio(
     Math.min(window.devicePixelRatio, 2)
 );
 
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-
 renderer.setClearColor(0x000000, 0);
 
 document
@@ -51,30 +46,33 @@ const camera = new THREE.PerspectiveCamera(
 
 
 // =====================================
-// VARIABLES DEL MODELO
-// =====================================
-
-let model = null;
-
-const loader = new GLTFLoader();
-
-
-// =====================================
 // CONFIGURACIÓN DE CÁMARA
 // =====================================
 
 const CAMERA_CONFIG = {
 
-    // Elevación de cámara
-    elevation: 0.18,
+    // Altura de la cámara
+    elevation: 0.85,
 
-    // Espacio alrededor del modelo
-    distanceMultiplier: 1.15,
+    // Distancia de cámara
+    distanceMultiplier: 0.75,
 
-    // Dirección de observación
-    direction: 1
+    // Dirección frontal
+    direction: -1,
+
+    // Ángulo lateral
+    horizontalAngle: 0.25
 
 };
+
+
+// =====================================
+// VARIABLES
+// =====================================
+
+let model = null;
+
+const loader = new GLTFLoader();
 
 
 // =====================================
@@ -93,7 +91,7 @@ loader.load(
 
 
         // ---------------------------------
-        // CALCULAR DIMENSIONES
+        // DIMENSIONES DEL MODELO
         // ---------------------------------
 
         const box = new THREE.Box3().setFromObject(model);
@@ -118,11 +116,11 @@ loader.load(
         // CALCULAR DISTANCIA
         // ---------------------------------
 
-        const boundingSphere = new THREE.Sphere();
+        const sphere = new THREE.Sphere();
 
-        box.getBoundingSphere(boundingSphere);
+        box.getBoundingSphere(sphere);
 
-        const radius = boundingSphere.radius;
+        const radius = sphere.radius;
 
         const verticalFov = THREE.MathUtils.degToRad(
             camera.fov
@@ -138,9 +136,7 @@ loader.load(
         );
 
         const distance = (
-
             radius / Math.sin(limitingFov / 2)
-
         ) * CAMERA_CONFIG.distanceMultiplier;
 
 
@@ -150,7 +146,7 @@ loader.load(
 
         camera.position.set(
 
-            0,
+            distance * CAMERA_CONFIG.horizontalAngle,
 
             distance * CAMERA_CONFIG.elevation,
 
@@ -160,7 +156,7 @@ loader.load(
 
 
         // ---------------------------------
-        // ORIENTACIÓN
+        // ORIENTAR HACIA EL MODELO
         // ---------------------------------
 
         camera.lookAt(0, 0, 0);
@@ -188,9 +184,11 @@ loader.load(
 
         console.log('Dimensiones:', size);
 
-        console.log('Centro original:', center);
+        console.log('Centro:', center);
 
-        console.log('Distancia cámara:', distance);
+        console.log('Distancia:', distance);
+
+        console.log('Posición cámara:', camera.position);
 
 
         render();
@@ -207,17 +205,12 @@ loader.load(
         if (progress.total > 0) {
 
             console.log(
-
                 'Carga:',
-
                 (
-
                     progress.loaded /
                     progress.total *
                     100
-
                 ).toFixed(2) + '%'
-
             );
 
         }
@@ -242,19 +235,15 @@ loader.load(
 
 
 // =====================================
-// SISTEMA DE MOVIMIENTO DE CÁMARA
+// MOVIMIENTO DE CÁMARA
 // =====================================
 
 let isMoving = false;
 
 function moveCamera(
-
     targetPosition,
-
     targetRotation,
-
     duration = 2000
-
 ) {
 
     if (isMoving) return;
@@ -266,21 +255,16 @@ function moveCamera(
     const startRotation = camera.quaternion.clone();
 
     const endPosition = new THREE.Vector3(
-
         targetPosition.x,
         targetPosition.y,
         targetPosition.z
-
     );
 
     const endRotation = new THREE.Euler(
-
         THREE.MathUtils.degToRad(targetRotation.x),
         THREE.MathUtils.degToRad(targetRotation.y),
         THREE.MathUtils.degToRad(targetRotation.z),
-
         'YXZ'
-
     );
 
     const endQuaternion = new THREE.Quaternion()
@@ -288,41 +272,28 @@ function moveCamera(
 
     const startTime = performance.now();
 
-
     function animateCamera(now) {
 
         const elapsed = Math.min(
-
             (now - startTime) / duration,
-
             1
-
         );
-
-        // Suavizado cinematográfico
 
         const eased = elapsed * elapsed * (3 - 2 * elapsed);
 
-
         camera.position.lerpVectors(
-
             startPosition,
             endPosition,
             eased
-
         );
 
         camera.quaternion.slerpQuaternions(
-
             startRotation,
             endQuaternion,
             eased
-
         );
 
-
         render();
-
 
         if (elapsed < 1) {
 
@@ -380,27 +351,18 @@ function render() {
 window.addEventListener('resize', () => {
 
     camera.aspect =
-
         window.innerWidth / window.innerHeight;
-
 
     camera.updateProjectionMatrix();
 
-
     renderer.setSize(
-
         window.innerWidth,
         window.innerHeight
-
     );
-
 
     renderer.setPixelRatio(
-
         Math.min(window.devicePixelRatio, 2)
-
     );
-
 
     render();
 
