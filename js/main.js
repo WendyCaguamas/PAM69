@@ -1,3 +1,4 @@
+
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -6,7 +7,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // =====================================
 
 const scene = new THREE.Scene();
+
 scene.background = null;
+
 
 // =====================================
 // RENDERIZADOR
@@ -17,18 +20,23 @@ const renderer = new THREE.WebGLRenderer({
     alpha: true
 });
 
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
 
 renderer.setPixelRatio(
     Math.min(window.devicePixelRatio, 2)
 );
 
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+
 renderer.setClearColor(0x000000, 0);
 
 document
     .getElementById('canvas-container')
     .appendChild(renderer.domElement);
+
 
 // =====================================
 // CÁMARA
@@ -37,13 +45,10 @@ document
 const camera = new THREE.PerspectiveCamera(
     39.6,
     window.innerWidth / window.innerHeight,
-    0.1,
+    0.01,
     1000
 );
 
-camera.position.set(7, 7, 4.5);
-
-camera.lookAt(0, 0, 0);
 
 // =====================================
 // VARIABLES DEL MODELO
@@ -52,6 +57,25 @@ camera.lookAt(0, 0, 0);
 let model = null;
 
 const loader = new GLTFLoader();
+
+
+// =====================================
+// CONFIGURACIÓN DE CÁMARA
+// =====================================
+
+const CAMERA_CONFIG = {
+
+    // Elevación de cámara
+    elevation: 0.18,
+
+    // Espacio alrededor del modelo
+    distanceMultiplier: 1.15,
+
+    // Dirección de observación
+    direction: 1
+
+};
+
 
 // =====================================
 // CARGAR MODELO 3D
@@ -67,7 +91,11 @@ loader.load(
 
         scene.add(model);
 
-        // Calcular dimensiones del modelo
+
+        // ---------------------------------
+        // CALCULAR DIMENSIONES
+        // ---------------------------------
+
         const box = new THREE.Box3().setFromObject(model);
 
         const center = box.getCenter(
@@ -78,60 +106,128 @@ loader.load(
             new THREE.Vector3()
         );
 
-        // Centrar modelo en la escena
+
+        // ---------------------------------
+        // CENTRAR MODELO
+        // ---------------------------------
+
         model.position.sub(center);
 
-        // Calcular tamaño máximo
-        const maxDimension = Math.max(
-            size.x,
-            size.y,
-            size.z
+
+        // ---------------------------------
+        // CALCULAR DISTANCIA
+        // ---------------------------------
+
+        const boundingSphere = new THREE.Sphere();
+
+        box.getBoundingSphere(boundingSphere);
+
+        const radius = boundingSphere.radius;
+
+        const verticalFov = THREE.MathUtils.degToRad(
+            camera.fov
         );
 
-        // Distancia de cámara
-        const distance = maxDimension * 0.1;
+        const horizontalFov = 2 * Math.atan(
+            Math.tan(verticalFov / 2) * camera.aspect
+        );
 
-        // Posición de cámara
+        const limitingFov = Math.min(
+            verticalFov,
+            horizontalFov
+        );
+
+        const distance = (
+
+            radius / Math.sin(limitingFov / 2)
+
+        ) * CAMERA_CONFIG.distanceMultiplier;
+
+
+        // ---------------------------------
+        // POSICIÓN DE CÁMARA
+        // ---------------------------------
+
         camera.position.set(
-            distance * 6,
-            distance * 0,
-            distance * 5
+
+            0,
+
+            distance * CAMERA_CONFIG.elevation,
+
+            distance * CAMERA_CONFIG.direction
+
         );
 
-        // Mirar al centro del modelo
+
+        // ---------------------------------
+        // ORIENTACIÓN
+        // ---------------------------------
+
         camera.lookAt(0, 0, 0);
 
-        // Ajustar clipping
-        camera.near = Math.max(0.01, distance / 100);
+
+        // ---------------------------------
+        // CLIPPING
+        // ---------------------------------
+
+        camera.near = Math.max(
+            0.001,
+            distance / 100
+        );
+
         camera.far = distance * 100;
 
         camera.updateProjectionMatrix();
 
+
+        // ---------------------------------
+        // INFORMACIÓN
+        // ---------------------------------
+
         console.log('Modelo cargado correctamente');
+
         console.log('Dimensiones:', size);
+
         console.log('Centro original:', center);
+
         console.log('Distancia cámara:', distance);
+
 
         render();
 
     },
+
+
+    // ---------------------------------
+    // PROGRESO DE CARGA
+    // ---------------------------------
 
     (progress) => {
 
         if (progress.total > 0) {
 
             console.log(
+
                 'Carga:',
+
                 (
+
                     progress.loaded /
                     progress.total *
                     100
+
                 ).toFixed(2) + '%'
+
             );
 
         }
 
     },
+
+
+    // ---------------------------------
+    // ERRORES
+    // ---------------------------------
 
     (error) => {
 
@@ -144,6 +240,7 @@ loader.load(
 
 );
 
+
 // =====================================
 // SISTEMA DE MOVIMIENTO DE CÁMARA
 // =====================================
@@ -151,9 +248,13 @@ loader.load(
 let isMoving = false;
 
 function moveCamera(
+
     targetPosition,
+
     targetRotation,
+
     duration = 2000
+
 ) {
 
     if (isMoving) return;
@@ -165,16 +266,21 @@ function moveCamera(
     const startRotation = camera.quaternion.clone();
 
     const endPosition = new THREE.Vector3(
+
         targetPosition.x,
         targetPosition.y,
         targetPosition.z
+
     );
 
     const endRotation = new THREE.Euler(
+
         THREE.MathUtils.degToRad(targetRotation.x),
         THREE.MathUtils.degToRad(targetRotation.y),
         THREE.MathUtils.degToRad(targetRotation.z),
+
         'YXZ'
+
     );
 
     const endQuaternion = new THREE.Quaternion()
@@ -182,29 +288,41 @@ function moveCamera(
 
     const startTime = performance.now();
 
+
     function animateCamera(now) {
 
         const elapsed = Math.min(
+
             (now - startTime) / duration,
+
             1
+
         );
 
         // Suavizado cinematográfico
+
         const eased = elapsed * elapsed * (3 - 2 * elapsed);
 
+
         camera.position.lerpVectors(
+
             startPosition,
             endPosition,
             eased
+
         );
 
         camera.quaternion.slerpQuaternions(
+
             startRotation,
             endQuaternion,
             eased
+
         );
 
+
         render();
+
 
         if (elapsed < 1) {
 
@@ -221,6 +339,7 @@ function moveCamera(
     requestAnimationFrame(animateCamera);
 
 }
+
 
 // =====================================
 // BOTÓN PROYECTOS
@@ -242,6 +361,7 @@ if (projectsButton) {
 
 }
 
+
 // =====================================
 // RENDERIZADO
 // =====================================
@@ -252,25 +372,35 @@ function render() {
 
 }
 
+
 // =====================================
-// REDIMENSIONAR
+// REDIMENSIONAR VENTANA
 // =====================================
 
 window.addEventListener('resize', () => {
 
     camera.aspect =
+
         window.innerWidth / window.innerHeight;
+
 
     camera.updateProjectionMatrix();
 
+
     renderer.setSize(
+
         window.innerWidth,
         window.innerHeight
+
     );
 
+
     renderer.setPixelRatio(
+
         Math.min(window.devicePixelRatio, 2)
+
     );
+
 
     render();
 
