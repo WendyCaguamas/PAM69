@@ -1,15 +1,146 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAM 69</title>
-    <link rel="icon" type="image/jpeg" href="images/favicon.jpg">
-    <!-- Conexión al archivo de estilos -->
-    <link rel="stylesheet" href="estilos.css">
+    <title>Web con Fondo 3D desde Blender</title>
+    <style>
+        /* Reseteo básico de márgenes */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            background-color: #0b0b0f; /* Fondo oscuro base mientras carga el 3D */
+        }
+
+        /* Contenedor fijo que ocupa toda la pantalla por detrás */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; 
+        }
+
+        /* Capa de contenido HTML (Texto, menús, etc.) */
+        .content {
+            position: relative;
+            z-index: 1; 
+            padding: 50px;
+            max-width: 600px;
+            pointer-events: none; /* Permite que el ratón pase a través del texto e interactúe con el 3D */
+        }
+
+        /* Clase para los elementos que SÍ deben recibir clics (botones, enlaces) */
+        .interactive {
+            pointer-events: auto;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Repositorio Practicas Programación</h1>
-    <script src="practica_01/calculadora_fotogramas.js"></script>
+
+    <!-- El lienzo 3D se dibujará aquí dentro -->
+    <div id="canvas-container"></div>
+
+    <!-- Tu contenido web normal -->
+    <div class="content">
+        <h1>Mi Sitio Web 3D</h1>
+        <p>Tu modelo "logo.glb" se está cargando de fondo sin luces, manteniendo los colores base y texturas directas de Blender.</p>
+        <button class="interactive">Botón Interactivo</button>
+    </div>
+
+    <!-- CDN alternativo ultra estable para evitar errores de CORS -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cloudflare.com",
+                "three/addons/": "https://jsdelivr.net"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // 1. Configuración de la Escena, Cámara y Renderizador
+        const scene = new THREE.Scene();
+        
+        // Cámara con perspectiva estándar
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // NOTA: No añadimos luces a la escena para lograr el look "flat / unlit" que buscas.
+
+        // 2. Cargar el modelo .glb de tu carpeta
+        const loader = new GLTFLoader();
+        let miModelo = null;
+
+        loader.load('./modelo/logo.glb', (gltf) => {
+            miModelo = gltf.scene;
+            
+            // Recorremos el modelo para cambiar sus materiales a un formato básico inmune a la luz
+            miModelo.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const oldMat = child.material;
+                    child.material = new THREE.MeshBasicMaterial({
+                        map: oldMat.map,         // Conserva tus texturas mapeadas
+                        color: oldMat.color,     // Conserva los colores planos de Blender
+                        side: THREE.DoubleSide   // Renderiza ambas caras de los polígonos
+                    });
+                }
+            });
+
+            // Centramos el modelo en el origen
+            miModelo.position.set(0, 0, 0);
+            scene.add(miModelo);
+            
+            console.log("Modelo cargado correctamente sin luces.");
+            
+        }, undefined, (error) => {
+            console.error('Error al intentar cargar logo.glb:', error);
+        });
+
+        // Posición de la cámara (Se aleja un poco en el eje Z para encuadrar los objetos)
+        camera.position.set(0, 1, 8);
+        camera.lookAt(0, 0, 0);
+
+        // 3. Ciclo de Animación (Renderizado continuo)
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Si el modelo ya cargó, le aplicamos una rotación constante y suave de fondo
+            if (miModelo) {
+                miModelo.rotation.y += 0.003; 
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 4. Hacer que el fondo sea Responsive (Se adapta si cambias el tamaño de ventana)
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
