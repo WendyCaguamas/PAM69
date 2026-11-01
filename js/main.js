@@ -2,37 +2,65 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// =====================================
 // ESCENA
+// =====================================
+
 const scene = new THREE.Scene();
 
-// CÁMARA
-const camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-);
-
+// =====================================
 // RENDERIZADOR
+// =====================================
+
 const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true
 });
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio, 2)
+);
+
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-document.getElementById('canvas-container').appendChild(renderer.domElement);
+renderer.setClearColor(0x000000, 0);
 
+document
+    .getElementById('canvas-container')
+    .appendChild(renderer.domElement);
+
+// =====================================
 // ILUMINACIÓN
-scene.add(new THREE.AmbientLight(0xffffff, 2));
+// =====================================
 
-const light = new THREE.DirectionalLight(0xffffff, 3);
-light.position.set(5, 5, 5);
-scene.add(light);
+const ambientLight = new THREE.AmbientLight(
+    0xffffff,
+    2
+);
 
-// CARGADOR GLB
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(
+    0xffffff,
+    3
+);
+
+directionalLight.position.set(5, 5, 5);
+
+scene.add(directionalLight);
+
+// =====================================
+// CÁMARA
+// =====================================
+
+let camera = null;
+
+// =====================================
+// CARGAR MODELO GLB
+// =====================================
+
 const loader = new GLTFLoader();
 
 loader.load(
@@ -42,48 +70,108 @@ loader.load(
 
         const model = gltf.scene;
 
+        // Agregar modelo a la escena
         scene.add(model);
 
-        // CALCULAR DIMENSIONES
-        const box = new THREE.Box3().setFromObject(model);
+        console.log('Modelo 3D cargado correctamente');
 
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
+        // =====================================
+        // UTILIZAR CÁMARA DE BLENDER
+        // =====================================
 
-        // CENTRAR MODELO
-        model.position.sub(center);
+        if (gltf.cameras && gltf.cameras.length > 0) {
 
-        // AJUSTAR CÁMARA
-        const maxDimension = Math.max(size.x, size.y, size.z);
+            camera = gltf.cameras[0];
 
-        const distance = (maxDimension / 2) /
-            Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+            console.log('Cámara de Blender encontrada:', camera);
 
-        camera.position.set(0, 0, distance * 1.8);
-        camera.lookAt(0, 0, 0);
+        } else {
 
-        console.log('Modelo cargado:', model);
-        console.log('Dimensiones:', size);
+            console.warn(
+                'No se encontró una cámara en Blender. Usando cámara alternativa.'
+            );
 
-        renderer.render(scene, camera);
+            camera = new THREE.PerspectiveCamera(
+                45,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+
+            camera.position.set(0, 0, 5);
+
+            camera.lookAt(0, 0, 0);
+        }
+
+        // Renderizar escena
+        render();
+
     },
 
     (progress) => {
-        console.log('Cargando modelo...');
+
+        if (progress.total > 0) {
+
+            const percentage = (
+                progress.loaded / progress.total
+            ) * 100;
+
+            console.log(
+                `Cargando modelo: ${percentage.toFixed(2)}%`
+            );
+
+        }
+
     },
 
     (error) => {
-        console.error('Error:', error);
+
+        console.error(
+            'Error al cargar el modelo GLB:',
+            error
+        );
+
     }
 );
 
-// REDIMENSIONAR
-window.addEventListener('resize', () => {
+// =====================================
+// RENDERIZADO ESTÁTICO
+// =====================================
 
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+function render() {
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (!camera) return;
 
     renderer.render(scene, camera);
+
+}
+
+// =====================================
+// REDIMENSIONAR VENTANA
+// =====================================
+
+window.addEventListener('resize', () => {
+
+    if (!camera) return;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    camera.aspect = width / height;
+
+    if (camera.isPerspectiveCamera) {
+
+        camera.updateProjectionMatrix();
+
+    }
+
+    renderer.setSize(width, height);
+
+    renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, 2)
+    );
+
+    render();
+
 });
+
