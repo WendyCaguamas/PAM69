@@ -32,6 +32,37 @@ document
     .appendChild(renderer.domElement);
 
 // =====================================
+// CÁMARA
+// =====================================
+
+const camera = new THREE.PerspectiveCamera(
+    39.6, // Equivalente aproximado a 50mm
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+);
+
+// POSICIÓN DE BLENDER
+
+camera.position.set(
+    7.35889,
+    4.95831,
+    6.92579
+);
+
+// ROTACIÓN DE BLENDER
+// Blender utiliza X, Y, Z.
+// Three.js utiliza otro sistema de ejes.
+
+camera.rotation.order = 'YXZ';
+
+camera.rotation.set(
+    THREE.MathUtils.degToRad(63.5593),
+    THREE.MathUtils.degToRad(46.6919),
+    0
+);
+
+// =====================================
 // ILUMINACIÓN
 // =====================================
 
@@ -52,13 +83,7 @@ directionalLight.position.set(5, 5, 5);
 scene.add(directionalLight);
 
 // =====================================
-// CÁMARA
-// =====================================
-
-let camera = null;
-
-// =====================================
-// CARGAR MODELO GLB
+// MODELO 3D
 // =====================================
 
 const loader = new GLTFLoader();
@@ -70,40 +95,10 @@ loader.load(
 
         const model = gltf.scene;
 
-        // Agregar modelo a la escena
         scene.add(model);
 
-        console.log('Modelo 3D cargado correctamente');
+        console.log('Modelo cargado correctamente');
 
-        // =====================================
-        // UTILIZAR CÁMARA DE BLENDER
-        // =====================================
-
-        if (gltf.cameras && gltf.cameras.length > 0) {
-
-            camera = gltf.cameras[0];
-
-            console.log('Cámara de Blender encontrada:', camera);
-
-        } else {
-
-            console.warn(
-                'No se encontró una cámara en Blender. Usando cámara alternativa.'
-            );
-
-            camera = new THREE.PerspectiveCamera(
-                45,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                1000
-            );
-
-            camera.position.set(0, 0, 5);
-
-            camera.lookAt(0, 0, 0);
-        }
-
-        // Renderizar escena
         render();
 
     },
@@ -111,61 +106,133 @@ loader.load(
     (progress) => {
 
         if (progress.total > 0) {
-
-            const percentage = (
-                progress.loaded / progress.total
-            ) * 100;
-
             console.log(
-                `Cargando modelo: ${percentage.toFixed(2)}%`
+                'Carga:',
+                (progress.loaded / progress.total * 100).toFixed(2) + '%'
             );
-
         }
 
     },
 
     (error) => {
 
-        console.error(
-            'Error al cargar el modelo GLB:',
-            error
-        );
+        console.error('Error cargando modelo:', error);
 
     }
 );
 
 // =====================================
-// RENDERIZADO ESTÁTICO
+// SISTEMA DE MOVIMIENTO DE CÁMARA
+// =====================================
+
+let isMoving = false;
+
+function moveCamera(targetPosition, targetRotation, duration = 2000) {
+
+    if (isMoving) return;
+
+    isMoving = true;
+
+    const startPosition = camera.position.clone();
+    const startRotation = camera.quaternion.clone();
+
+    const endPosition = new THREE.Vector3(
+        targetPosition.x,
+        targetPosition.y,
+        targetPosition.z
+    );
+
+    const endRotation = new THREE.Euler(
+        THREE.MathUtils.degToRad(targetRotation.x),
+        THREE.MathUtils.degToRad(targetRotation.y),
+        THREE.MathUtils.degToRad(targetRotation.z),
+        'YXZ'
+    );
+
+    const endQuaternion = new THREE.Quaternion()
+        .setFromEuler(endRotation);
+
+    const startTime = performance.now();
+
+    function animateCamera(now) {
+
+        const elapsed = Math.min(
+            (now - startTime) / duration,
+            1
+        );
+
+        // Suavizado cinematográfico
+        const eased = elapsed * elapsed * (3 - 2 * elapsed);
+
+        camera.position.lerpVectors(
+            startPosition,
+            endPosition,
+            eased
+        );
+
+        camera.quaternion.slerpQuaternions(
+            startRotation,
+            endQuaternion,
+            eased
+        );
+
+        render();
+
+        if (elapsed < 1) {
+            requestAnimationFrame(animateCamera);
+        } else {
+            isMoving = false;
+        }
+    }
+
+    requestAnimationFrame(animateCamera);
+}
+
+// =====================================
+// BOTÓN PROYECTOS
+// =====================================
+
+const projectsButton = document.getElementById('btn-proyectos');
+
+if (projectsButton) {
+
+    projectsButton.addEventListener('click', (event) => {
+
+        event.preventDefault();
+
+        console.log('Entrando a proyectos...');
+
+        // Aquí posteriormente colocaremos
+        // las coordenadas de la cámara de proyectos.
+
+    });
+
+}
+
+// =====================================
+// RENDERIZADO
 // =====================================
 
 function render() {
-
-    if (!camera) return;
 
     renderer.render(scene, camera);
 
 }
 
 // =====================================
-// REDIMENSIONAR VENTANA
+// REDIMENSIONAR
 // =====================================
 
 window.addEventListener('resize', () => {
 
-    if (!camera) return;
+    camera.aspect = window.innerWidth / window.innerHeight;
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    camera.updateProjectionMatrix();
 
-    camera.aspect = width / height;
-
-    if (camera.isPerspectiveCamera) {
-
-        camera.updateProjectionMatrix();
-
-    }
-
-    renderer.setSize(width, height);
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
 
     renderer.setPixelRatio(
         Math.min(window.devicePixelRatio, 2)
