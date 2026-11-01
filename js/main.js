@@ -43,7 +43,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 
 // Posición inicial provisional
-camera.position.set(7, 4, 7);
+camera.position.set(7, -6, 5);
 
 camera.lookAt(0, 0, 0);
 
