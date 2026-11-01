@@ -42,9 +42,9 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(3, 1, 5);
 
 // ROTACIÓN DE LA CÁMARA
-camera.rotation.set(
-    THREE.MathUtils.degToRad(45),
-    THREE.MathUtils.degToRad(45),
+    camera.rotation.set(
+    THREE.MathUtils.degToRad(0),
+    THREE.MathUtils.degToRad(0),
     0
 );
 
