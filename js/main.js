@@ -121,7 +121,7 @@ loader.load(
         );
 
         // Distancia de cámara
-        const distance = maxDimension * 2.5;
+        const distance = maxDimension * 1;
 
         // Posición de cámara
         camera.position.set(
