@@ -2,17 +2,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// =====================================
 // ESCENA
-// =====================================
 
 const scene = new THREE.Scene();
 scene.background = null;
 
 
-// =====================================
 // RENDERIZADOR
-// =====================================
 
 const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -33,9 +29,7 @@ document
     .appendChild(renderer.domElement);
 
 
-// =====================================
 // CÁMARA
-// =====================================
 
 const camera = new THREE.PerspectiveCamera(
     39.6,
@@ -44,40 +38,25 @@ const camera = new THREE.PerspectiveCamera(
     1000
 );
 
+// POSICIÓN DE LA CÁMARA
+camera.position.set(3, 1, 5);
 
-// =====================================
-// CONFIGURACIÓN DE CÁMARA
-// =====================================
-
-const CAMERA_CONFIG = {
-
-    // Altura de la cámara
-    elevation: 0.85,
-
-    // Distancia de cámara
-    distanceMultiplier: 0.75,
-
-    // Dirección frontal
-    direction: -1,
-
-    // Ángulo lateral
-    horizontalAngle: 0.25
-
-};
+// ROTACIÓN DE LA CÁMARA
+camera.rotation.set(
+    THREE.MathUtils.degToRad(45),
+    THREE.MathUtils.degToRad(45),
+    0
+);
 
 
-// =====================================
 // VARIABLES
-// =====================================
 
 let model = null;
 
 const loader = new GLTFLoader();
 
 
-// =====================================
 // CARGAR MODELO 3D
-// =====================================
 
 loader.load(
 
@@ -89,116 +68,20 @@ loader.load(
 
         scene.add(model);
 
+        // POSICIÓN DEL MODELO
+        model.position.set(0, 0, 0);
 
-        // ---------------------------------
-        // DIMENSIONES DEL MODELO
-        // ---------------------------------
+        // ROTACIÓN DEL MODELO
+        model.rotation.set(0, 0, 0);
 
-        const box = new THREE.Box3().setFromObject(model);
-
-        const center = box.getCenter(
-            new THREE.Vector3()
-        );
-
-        const size = box.getSize(
-            new THREE.Vector3()
-        );
-
-
-        // ---------------------------------
-        // CENTRAR MODELO
-        // ---------------------------------
-
-        model.position.sub(center);
-
-
-        // ---------------------------------
-        // CALCULAR DISTANCIA
-        // ---------------------------------
-
-        const sphere = new THREE.Sphere();
-
-        box.getBoundingSphere(sphere);
-
-        const radius = sphere.radius;
-
-        const verticalFov = THREE.MathUtils.degToRad(
-            camera.fov
-        );
-
-        const horizontalFov = 2 * Math.atan(
-            Math.tan(verticalFov / 2) * camera.aspect
-        );
-
-        const limitingFov = Math.min(
-            verticalFov,
-            horizontalFov
-        );
-
-        const distance = (
-            radius / Math.sin(limitingFov / 2)
-        ) * CAMERA_CONFIG.distanceMultiplier;
-
-
-        // ---------------------------------
-        // POSICIÓN DE CÁMARA
-        // ---------------------------------
-
-        camera.position.set(
-
-            distance * CAMERA_CONFIG.horizontalAngle,
-
-            distance * CAMERA_CONFIG.elevation,
-
-            distance * CAMERA_CONFIG.direction
-
-        );
-
-
-        // ---------------------------------
-        // ORIENTAR HACIA EL MODELO
-        // ---------------------------------
-
-        camera.lookAt(0, 0, 0);
-
-
-        // ---------------------------------
-        // CLIPPING
-        // ---------------------------------
-
-        camera.near = Math.max(
-            0.001,
-            distance / 100
-        );
-
-        camera.far = distance * 100;
-
-        camera.updateProjectionMatrix();
-
-
-        // ---------------------------------
-        // INFORMACIÓN
-        // ---------------------------------
+        // ESCALA DEL MODELO
+        model.scale.set(1, 1, 1);
 
         console.log('Modelo cargado correctamente');
-
-        console.log('Dimensiones:', size);
-
-        console.log('Centro:', center);
-
-        console.log('Distancia:', distance);
-
-        console.log('Posición cámara:', camera.position);
-
 
         render();
 
     },
-
-
-    // ---------------------------------
-    // PROGRESO DE CARGA
-    // ---------------------------------
 
     (progress) => {
 
@@ -217,11 +100,6 @@ loader.load(
 
     },
 
-
-    // ---------------------------------
-    // ERRORES
-    // ---------------------------------
-
     (error) => {
 
         console.error(
@@ -234,9 +112,7 @@ loader.load(
 );
 
 
-// =====================================
 // MOVIMIENTO DE CÁMARA
-// =====================================
 
 let isMoving = false;
 
@@ -312,9 +188,7 @@ function moveCamera(
 }
 
 
-// =====================================
 // BOTÓN PROYECTOS
-// =====================================
 
 const projectsButton = document.getElementById(
     'btn-proyectos'
@@ -333,9 +207,7 @@ if (projectsButton) {
 }
 
 
-// =====================================
 // RENDERIZADO
-// =====================================
 
 function render() {
 
@@ -344,9 +216,7 @@ function render() {
 }
 
 
-// =====================================
-// REDIMENSIONAR VENTANA
-// =====================================
+// REDIMENSIONAR
 
 window.addEventListener('resize', () => {
 
