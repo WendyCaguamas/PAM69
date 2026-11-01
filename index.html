@@ -14,7 +14,7 @@
             overflow-x: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: white;
-            background-color: #0b0b0f; /* Fondo oscuro base mientras carga el 3D */
+            background-color: #0b0b0f; /* Fondo oscuro mientras carga el 3D */
         }
 
         /* Contenedor fijo que ocupa toda la pantalla por detrás */
@@ -33,10 +33,10 @@
             z-index: 1; 
             padding: 50px;
             max-width: 600px;
-            pointer-events: none; /* Permite que el ratón pase a través del texto e interactúe con el 3D */
+            pointer-events: none; /* Permite interactuar con el 3D de fondo */
         }
 
-        /* Clase para los elementos que SÍ deben recibir clics (botones, enlaces) */
+        /* Elementos interactivos */
         .interactive {
             pointer-events: auto;
             background: #ffffff;
@@ -58,28 +58,18 @@
     <!-- Tu contenido web normal -->
     <div class="content">
         <h1>Mi Sitio Web 3D</h1>
-        <p>Tu modelo "logo.glb" se está cargando de fondo sin luces, manteniendo los colores base y texturas directas de Blender.</p>
+        <p>Tu modelo "logo.glb" se está cargando de fondo sin luces desde GitHub Pages.</p>
         <button class="interactive">Botón Interactivo</button>
     </div>
 
-    <!-- CDN alternativo ultra estable para evitar errores de CORS -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cloudflare.com",
-                "three/addons/": "https://jsdelivr.net"
-            }
-        }
-    </script>
-
+    <!-- Usamos un script modular directo sin depender de importmaps complejos -->
     <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        // Importación directa desde la red CDN oficial de cdnjs (Cloudflare CDN)
+        import * as THREE from 'https://cloudflare.com';
+        import { GLTFLoader } from 'https://jsdelivr.net';
 
         // 1. Configuración de la Escena, Cámara y Renderizador
         const scene = new THREE.Scene();
-        
-        // Cámara con perspectiva estándar
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -87,55 +77,50 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // NOTA: No añadimos luces a la escena para lograr el look "flat / unlit" que buscas.
+        // Sin luces para lograr el acabado "flat/material preview" que deseas
 
-        // 2. Cargar el modelo .glb de tu carpeta
+        // 2. Cargar el modelo .glb usando rutas relativas explícitas para GitHub
         const loader = new GLTFLoader();
         let miModelo = null;
 
         loader.load('./modelo/logo.glb', (gltf) => {
             miModelo = gltf.scene;
             
-            // Recorremos el modelo para cambiar sus materiales a un formato básico inmune a la luz
+            // Forzar materiales básicos planos que ignoren la iluminación web
             miModelo.traverse((child) => {
                 if (child.isMesh && child.material) {
                     const oldMat = child.material;
                     child.material = new THREE.MeshBasicMaterial({
-                        map: oldMat.map,         // Conserva tus texturas mapeadas
-                        color: oldMat.color,     // Conserva los colores planos de Blender
-                        side: THREE.DoubleSide   // Renderiza ambas caras de los polígonos
+                        map: oldMat.map,         
+                        color: oldMat.color,     
+                        side: THREE.DoubleSide   
                     });
                 }
             });
 
-            // Centramos el modelo en el origen
             miModelo.position.set(0, 0, 0);
             scene.add(miModelo);
-            
-            console.log("Modelo cargado correctamente sin luces.");
+            console.log("Modelo 3D cargado correctamente.");
             
         }, undefined, (error) => {
             console.error('Error al intentar cargar logo.glb:', error);
         });
 
-        // Posición de la cámara (Se aleja un poco en el eje Z para encuadrar los objetos)
+        // Posición de la cámara en el espacio
         camera.position.set(0, 1, 8);
         camera.lookAt(0, 0, 0);
 
-        // 3. Ciclo de Animación (Renderizado continuo)
+        // 3. Animación de rotación continua
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Si el modelo ya cargó, le aplicamos una rotación constante y suave de fondo
             if (miModelo) {
                 miModelo.rotation.y += 0.003; 
             }
-
             renderer.render(scene, camera);
         }
         animate();
 
-        // 4. Hacer que el fondo sea Responsive (Se adapta si cambias el tamaño de ventana)
+        // 4. Adaptar el diseño si se cambia el tamaño de la ventana
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
