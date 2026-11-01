@@ -125,7 +125,7 @@ loader.load(
 
         // Posición de cámara
         camera.position.set(
-            distance * 6,
+            distance * 5,
             distance * 0,
             distance * 4.5
         );
