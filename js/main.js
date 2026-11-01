@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -42,40 +41,9 @@ const camera = new THREE.PerspectiveCamera(
     1000
 );
 
-// Posición inicial provisional
 camera.position.set(7, 7, 4.5);
 
 camera.lookAt(0, 0, 0);
-
-// =====================================
-// ILUMINACIÓN
-// =====================================
-
-const ambientLight = new THREE.AmbientLight(
-    0xffffff,
-    2
-);
-
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(
-    0xffffff,
-    3
-);
-
-directionalLight.position.set(5, 5, 5);
-
-scene.add(directionalLight);
-
-// Luz adicional
-const fillLight = new THREE.DirectionalLight(
-    0xffffff,
-    1
-);
-
-fillLight.position.set(-5, 3, -5);
-
-scene.add(fillLight);
 
 // =====================================
 // VARIABLES DEL MODELO
@@ -269,16 +237,6 @@ if (projectsButton) {
         event.preventDefault();
 
         console.log('Entrando a proyectos...');
-
-        // Aquí colocaremos las coordenadas
-        // de la cámara para la sección proyectos.
-
-        // Ejemplo:
-        // moveCamera(
-        //     { x: 5, y: 3, z: 5 },
-        //     { x: 0, y: 0, z: 0 },
-        //     2000
-        // );
 
     });
 
