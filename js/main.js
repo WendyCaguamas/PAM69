@@ -1,21 +1,27 @@
-
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// ==========================================
 // ESCENA
+// ==========================================
 
 const scene = new THREE.Scene();
 scene.background = null;
 
 
+// ==========================================
 // RENDERIZADOR
+// ==========================================
 
 const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true
 });
 
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
 
 renderer.setPixelRatio(
     Math.min(window.devicePixelRatio, 2)
@@ -29,34 +35,41 @@ document
     .appendChild(renderer.domElement);
 
 
-// CÁMARA
-
-const camera = new THREE.PerspectiveCamera(
-    39.6,
-    window.innerWidth / window.innerHeight,
-    0.01,
-    1000
-);
-
-// POSICIÓN DE LA CÁMARA
-camera.position.set(3, 1, 5);
-
-// ROTACIÓN DE LA CÁMARA
-    camera.rotation.set(
-    THREE.MathUtils.degToRad(0),
-    THREE.MathUtils.degToRad(0),
-    0
-);
-
-
+// ==========================================
 // VARIABLES
+// ==========================================
 
 let model = null;
+let camera = null;
 
 const loader = new GLTFLoader();
 
 
+// ==========================================
+// CÁMARA DE RESPALDO
+// ==========================================
+
+function createFallbackCamera() {
+
+    const fallbackCamera = new THREE.PerspectiveCamera(
+        39.6,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        1000
+    );
+
+    fallbackCamera.position.set(3, 1, 5);
+
+    fallbackCamera.rotation.set(0, 0, 0);
+
+    return fallbackCamera;
+
+}
+
+
+// ==========================================
 // CARGAR MODELO 3D
+// ==========================================
 
 loader.load(
 
@@ -68,20 +81,54 @@ loader.load(
 
         scene.add(model);
 
+
         // POSICIÓN DEL MODELO
+
         model.position.set(0, 0, 0);
 
+
         // ROTACIÓN DEL MODELO
+
         model.rotation.set(0, 0, 0);
 
+
         // ESCALA DEL MODELO
+
         model.scale.set(1, 1, 1);
+
+
+        // ==================================
+        // UTILIZAR CÁMARA DEL GLB
+        // ==================================
+
+        if (gltf.cameras.length > 0) {
+
+            camera = gltf.cameras[0];
+
+            console.log(
+                'Cámara del GLB cargada correctamente:',
+                camera.name
+            );
+
+        } else {
+
+            console.warn(
+                'El GLB no contiene cámaras. Usando cámara de respaldo.'
+            );
+
+            camera = createFallbackCamera();
+
+        }
+
 
         console.log('Modelo cargado correctamente');
 
         render();
 
     },
+
+
+    // PROGRESO DE CARGA
 
     (progress) => {
 
@@ -100,6 +147,9 @@ loader.load(
 
     },
 
+
+    // ERROR
+
     (error) => {
 
         console.error(
@@ -112,7 +162,9 @@ loader.load(
 );
 
 
+// ==========================================
 // MOVIMIENTO DE CÁMARA
+// ==========================================
 
 let isMoving = false;
 
@@ -122,13 +174,15 @@ function moveCamera(
     duration = 2000
 ) {
 
-    if (isMoving) return;
+    if (!camera || isMoving) return;
 
     isMoving = true;
+
 
     const startPosition = camera.position.clone();
 
     const startRotation = camera.quaternion.clone();
+
 
     const endPosition = new THREE.Vector3(
         targetPosition.x,
@@ -136,17 +190,26 @@ function moveCamera(
         targetPosition.z
     );
 
+
     const endRotation = new THREE.Euler(
+
         THREE.MathUtils.degToRad(targetRotation.x),
+
         THREE.MathUtils.degToRad(targetRotation.y),
+
         THREE.MathUtils.degToRad(targetRotation.z),
+
         'YXZ'
+
     );
+
 
     const endQuaternion = new THREE.Quaternion()
         .setFromEuler(endRotation);
 
+
     const startTime = performance.now();
+
 
     function animateCamera(now) {
 
@@ -155,7 +218,9 @@ function moveCamera(
             1
         );
 
+
         const eased = elapsed * elapsed * (3 - 2 * elapsed);
+
 
         camera.position.lerpVectors(
             startPosition,
@@ -163,13 +228,16 @@ function moveCamera(
             eased
         );
 
+
         camera.quaternion.slerpQuaternions(
             startRotation,
             endQuaternion,
             eased
         );
 
+
         render();
+
 
         if (elapsed < 1) {
 
@@ -183,12 +251,15 @@ function moveCamera(
 
     }
 
+
     requestAnimationFrame(animateCamera);
 
 }
 
 
+// ==========================================
 // BOTÓN PROYECTOS
+// ==========================================
 
 const projectsButton = document.getElementById(
     'btn-proyectos'
@@ -207,32 +278,72 @@ if (projectsButton) {
 }
 
 
+// ==========================================
 // RENDERIZADO
+// ==========================================
 
 function render() {
+
+    if (!camera) return;
 
     renderer.render(scene, camera);
 
 }
 
 
+// ==========================================
 // REDIMENSIONAR
+// ==========================================
 
 window.addEventListener('resize', () => {
 
-    camera.aspect =
-        window.innerWidth / window.innerHeight;
+    if (!camera) return;
 
-    camera.updateProjectionMatrix();
+
+    if (camera.isPerspectiveCamera) {
+
+        camera.aspect =
+            window.innerWidth / window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+    }
+
+
+    if (camera.isOrthographicCamera) {
+
+        // Conserva los límites verticales
+        // y adapta los horizontales.
+
+        const aspect =
+            window.innerWidth / window.innerHeight;
+
+        const height = camera.top - camera.bottom;
+
+        const width = height * aspect;
+
+        const centerX =
+            (camera.left + camera.right) / 2;
+
+        camera.left = centerX - width / 2;
+
+        camera.right = centerX + width / 2;
+
+        camera.updateProjectionMatrix();
+
+    }
+
 
     renderer.setSize(
         window.innerWidth,
         window.innerHeight
     );
 
+
     renderer.setPixelRatio(
         Math.min(window.devicePixelRatio, 2)
     );
+
 
     render();
 
